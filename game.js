@@ -72,29 +72,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function getNormalRoundMusic() { const r = Math.random(); if (r < 0.45) return ui.audio.norm1; if (r < 0.90) return ui.audio.norm2; return ui.audio.fin2; }
     function getFinalRoundMusic() { return Math.random() > 0.5 ? ui.audio.fin1 : ui.audio.fin2; }
 
-    // --- ФУНКЦИИ ИНТЕРФЕЙСА ---
     function toMode() { playerName = ui.playerNameInput.value.trim().toUpperCase() || "ИГРОК"; ui.playerNameDisplay.innerText = playerName; ui.screens.name.style.display = 'none'; ui.screens.mode.style.display = 'flex'; }
     function startStandard() { initializeNewGame(); state.mode = GAME_MODES.STANDARD; ui.screens.mode.style.display = 'none'; ui.screens.game.style.display = 'flex'; log("--- РЕЖИМ: СТАНДАРТ ---", 'l-sys'); initializeStage(); }
     function startEndless() { initializeNewGame(); state.mode = GAME_MODES.ENDLESS; ui.screens.mode.style.display = 'none'; ui.screens.game.style.display = 'flex'; log("--- РЕЖИМ: БЕСКОНЕЧНЫЙ ---", 'l-sys'); initializeStage(); }
     function continueEndless() { state.money *= 2; ui.screens.cash.style.display = 'none'; ui.screens.game.style.display = 'flex'; initializeStage(); }
     function cashOut() { gameOver(true); }
 
-    // --- ЛОГИКА ---
-    function initializeNewGame() {
-        state = { 
-            mode: GAME_MODES.STANDARD, stage: 1, money: 0, 
-            hp: { p: 0, d: 0 }, maxHpForRound: 0, charges: [], turn: 'p', 
-            items: { p: {}, d: {} }, cuffedTurns: { p: 0, d: 0 }, 
-            sawActive: false, isSuddenDeath: false, wiresCut: false,
-            isStealing: false, isGameOver: false, isBlocked: false, 
-            initialLive: 0, initialBlank: 0, phonePrediction: null, 
-            endlessCycleStartMoney: 0, endlessCycleStartStage: 1 
-        };
-        aiMemory = { knownCharge: null, knownIndex: -1, knownType: null };
-        ITEM_KEYS.forEach(k => { state.items.p[k] = 0; state.items.d[k] = 0; });
-        if(dealerWatchdogTimer) clearTimeout(dealerWatchdogTimer);
-    }
-
+    function initializeNewGame() { state = { mode: GAME_MODES.STANDARD, stage: 1, money: 0, hp: { p: 0, d: 0 }, maxHpForRound: 0, charges: [], turn: 'p', items: { p: {}, d: {} }, cuffedTurns: { p: 0, d: 0 }, sawActive: false, isSuddenDeath: false, wiresCut: false, isStealing: false, isGameOver: false, isBlocked: false, initialLive: 0, initialBlank: 0, phonePrediction: null, endlessCycleStartMoney: 0, endlessCycleStartStage: 1 }; aiMemory = { knownCharge: null, knownIndex: -1, knownType: null }; ITEM_KEYS.forEach(k => { state.items.p[k] = 0; state.items.d[k] = 0; }); if(dealerWatchdogTimer) clearTimeout(dealerWatchdogTimer); }
+    
     function initializeStage() {
         state.isBlocked = false; state.isSuddenDeath = false; state.wiresCut = false;
         ui.screens.game.classList.remove("sudden-death");
@@ -121,40 +106,21 @@ document.addEventListener('DOMContentLoaded', () => {
         newLoadout(giveItems);
     }
 
-    function shuffleArray(array) {
-        for (let i = array.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [array[i], array[j]] = [array[j], array[i]];
-        }
-        return array;
-    }
+    function shuffleArray(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } return array; }
 
     function newLoadout(giveItems = true) {
         if(state.isGameOver) return;
         log("--- НОВАЯ ЗАРЯДКА ---", 'l-sys');
         playSfx('pump');
         let live, blank;
-        
-        if (state.mode === GAME_MODES.STANDARD && state.stage === 1) { 
-            live = 1; blank = 2; 
-        } else { 
-            const total = Math.floor(Math.random() * 5) + 4; 
-            live = Math.floor(total / 2); 
-            if(Math.random() > 0.5) live++; 
-            if(live < 1) live = 1; 
-            if(live >= total) live = total - 1; 
-            blank = total - live; 
-        }
-        
+        if (state.mode === GAME_MODES.STANDARD && state.stage === 1) { live = 1; blank = 2; } 
+        else { const total = Math.floor(Math.random() * 5) + 4; live = Math.floor(total / 2); if(Math.random() > 0.5) live++; if(live < 1) live = 1; if(live >= total) live = total - 1; blank = total - live; }
         state.initialLive = live; state.initialBlank = blank;
         let deck = Array(live).fill(true).concat(Array(blank).fill(false));
         state.charges = shuffleArray(deck);
-        
         log(`Заряд: ${live} боевых / ${blank} холостых.`);
-        
         if (giveItems) {
-            const itemsToGive = Math.floor(Math.random() * 4) + 2;
-            let pGiven = 0, dGiven = 0;
+            const itemsToGive = Math.floor(Math.random() * 4) + 2; let pGiven = 0, dGiven = 0;
             const countItems = (who) => Object.values(state.items[who]).reduce((a, b) => a + b, 0);
             let availableKeys = ITEM_KEYS;
             if (state.wiresCut) { availableKeys = ITEM_KEYS.filter(k => k !== 'cig' && k !== 'pills'); }
@@ -191,7 +157,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             return html;
         };
-
         ui.hp.p.innerHTML = drawHearts(state.hp.p, state.maxHpForRound);
         ui.hp.d.innerHTML = drawHearts(state.hp.d, state.maxHpForRound);
         ui.hpNum.p.innerText = `HP: ${state.hp.p}/${state.maxHpForRound}`; 
@@ -287,6 +252,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function aiTurn() {
         if(state.isGameOver) return;
         state.isBlocked = true; 
+        
         ui.dealerName.innerText = "ДУМАЕТ...";
         ui.boxes.d.classList.add("thinking");
         resetWatchdog();
@@ -334,6 +300,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         ui.dealerName.innerText = "ДИЛЕР";
         ui.boxes.d.classList.remove("thinking");
+
         shoot(target);
     }
 
@@ -436,21 +403,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function gameOver(isWin) {
         ui.sfx.heart.pause(); 
+        
         if (!isWin && state.mode === GAME_MODES.ENDLESS) {
-            playMusic(ui.audio.lobby); log("Смерть... Цикл перезапускается.", "l-harm");
-            state.money = state.endlessCycleStartMoney; state.stage = state.endlessCycleStartStage;
-            await wait(3000); initializeStage(); return;
+             // Просто продолжаем до экрана поражения
         }
+        
         playMusic(isWin ? ui.audio.win : ui.audio.death);
+        
         state.isGameOver = true; state.isBlocked = true;
         ui.screens.game.style.display = 'none'; ui.screens.cash.style.display = 'none'; ui.screens.end.style.display = 'flex';
+        
         const title = isWin ? "ПОБЕДА!" : "ПОРАЖЕНИЕ";
         const msg = isWin ? (state.mode === GAME_MODES.STANDARD ? "Вы забрали главный приз:" : "Вы ушли с суммой:") : `Вы погибли в ${state.mode === GAME_MODES.STANDARD ? 'этапе' : 'раунде'} ${state.stage}.`;
+        
         ui.end.title.innerText = title; ui.end.title.style.color = isWin ? '#5f5' : '#f55';
         ui.end.msg.innerHTML = msg;
-        if(isWin || state.mode === GAME_MODES.ENDLESS) { ui.end.cash.style.display = 'block'; const finalMoney = (isWin && state.mode === GAME_MODES.STANDARD) ? (70000 + state.money) : state.money; animateCounter(ui.end.cash, 0, finalMoney, 1500); } else { ui.end.cash.style.display = 'none'; }
+        
+        if(isWin || state.mode === GAME_MODES.ENDLESS) { 
+            ui.end.cash.style.display = 'block'; 
+            const finalMoney = (isWin && state.mode === GAME_MODES.STANDARD) ? (70000 + state.money) : state.money; 
+            animateCounter(ui.end.cash, 0, finalMoney, 1500); 
+        } else { 
+            ui.end.cash.style.display = 'none'; 
+        }
     }
 
+    // --- НАЗНАЧЕНИЕ СОБЫТИЙ ---
     ui.buttons.next.onclick = toMode;
     ui.buttons.standard.onclick = startStandard;
     ui.buttons.endless.onclick = startEndless;
