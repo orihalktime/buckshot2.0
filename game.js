@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         vignette: el('vignette'), gameContainer: el('game'),
         damageFlash: el('damage-flash'),
-        dealerName: el('d-box').querySelector('.character-header div')
+        dealerNameContainer: el('d-box').querySelector('.character-header div') // Ссылка на контейнер имени
     };
     
     // --- АУДИО ---
@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const log = (text, className = "") => { ui.log.innerHTML += `<div class="log-line ${className}">> ${text}</div>`; ui.log.scrollTop = ui.log.scrollHeight; };
     const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
     function addMoney(amount, reason) { state.money += amount; }
-    function resetWatchdog() { if (dealerWatchdogTimer) clearTimeout(dealerWatchdogTimer); if (state.turn === 'd' && !state.cuffedTurns.d && !state.isGameOver) { dealerWatchdogTimer = setTimeout(() => { log("Дилер замешкался... (АВТО-ХОД)", "l-sys"); ui.dealerName.innerText = "ДИЛЕР"; ui.boxes.d.classList.remove("thinking"); const target = aiMemory.knownCharge === 'blank' ? 'self' : 'p'; shoot(target); }, 8000); } }
+    function resetWatchdog() { if (dealerWatchdogTimer) clearTimeout(dealerWatchdogTimer); if (state.turn === 'd' && !state.cuffedTurns.d && !state.isGameOver) { dealerWatchdogTimer = setTimeout(() => { log("Дилер замешкался... (АВТО-ХОД)", "l-sys"); ui.boxes.d.classList.remove("thinking"); ui.dealerNameContainer.innerText = "ДИЛЕР"; const target = aiMemory.knownCharge === 'blank' ? 'self' : 'p'; shoot(target); }, 8000); } }
     function triggerDamageFlash() { ui.damageFlash.classList.add('active'); setTimeout(() => { ui.damageFlash.classList.remove('active'); }, 150); }
     function getNormalRoundMusic() { const r = Math.random(); if (r < 0.45) return ui.audio.norm1; if (r < 0.90) return ui.audio.norm2; return ui.audio.fin2; }
     function getFinalRoundMusic() { return Math.random() > 0.5 ? ui.audio.fin1 : ui.audio.fin2; }
@@ -85,6 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
         state.isBlocked = false; state.isSuddenDeath = false; state.wiresCut = false;
         ui.screens.game.classList.remove("sudden-death");
         let currentMaxHp = 0; let giveItems = true;
+        
         if (state.mode === GAME_MODES.STANDARD) {
             ui.gameTitle.innerText = `BUCKSHOT - ЭТАП ${state.stage}`;
             switch(state.stage) {
@@ -157,6 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             return html;
         };
+
         ui.hp.p.innerHTML = drawHearts(state.hp.p, state.maxHpForRound);
         ui.hp.d.innerHTML = drawHearts(state.hp.d, state.maxHpForRound);
         ui.hpNum.p.innerText = `HP: ${state.hp.p}/${state.maxHpForRound}`; 
@@ -166,7 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ui.boxes.p.className = "p"===state.turn?"turn-box active-turn":"turn-box"; 
         ui.boxes.d.className = "d"===state.turn?"turn-box active-turn":"turn-box"; 
         
-        if (state.isSuddenDeath && state.hp.d <= 2) { ui.boxes.d.classList.add('critical-state'); } else { ui.boxes.d.classList.remove('critical-state'); }
+        if (state.wiresCut && state.hp.d <= 2) { ui.boxes.d.classList.add('critical-state'); } else { ui.boxes.d.classList.remove('critical-state'); }
 
         const canAct = !state.isBlocked && "p"===state.turn && state.charges.length > 0 && !state.cuffedTurns.p && !state.isStealing && !state.isGameOver;
         ui.buttons.dealer.disabled = !canAct; ui.buttons.self.disabled = !canAct;
@@ -253,12 +255,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if(state.isGameOver) return;
         state.isBlocked = true; 
         
-        ui.dealerName.innerText = "ДУМАЕТ...";
+        // ИСПРАВЛЕНО: Надпись и анимация появляются вместе
+        ui.dealerNameContainer.innerText = "ДУМАЕТ...";
         ui.boxes.d.classList.add("thinking");
         resetWatchdog();
         
         await wait(2500);
-        
         if(state.cuffedTurns.d > 0) { 
             log("Дилер пропускает ход (в наручниках).", "l-sys"); 
             state.cuffedTurns.d = 0; state.turn = 'p'; 
@@ -267,7 +269,6 @@ document.addEventListener('DOMContentLoaded', () => {
             handleNextTurn(); 
             return; 
         }
-        
         if (aiMemory.knownIndex === 0) { aiMemory.knownCharge = aiMemory.knownType; aiMemory.knownIndex = -1; }
         
         let itemUsedInLoop = true;
@@ -304,7 +305,7 @@ document.addEventListener('DOMContentLoaded', () => {
             else target = state.hp.d >= state.hp.p ? "self" : 'p';
         }
         
-        ui.dealerName.innerText = "ДИЛЕР";
+        ui.dealerNameContainer.innerText = "ДИЛЕР";
         ui.boxes.d.classList.remove("thinking");
 
         shoot(target);
@@ -376,7 +377,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else { render(); }
         }
     }
-    
+
     function checkDeath() {
         if(state.hp.p <= 0) { gameOver(false); return true; }
         if(state.hp.d <= 0) { winStage(); return true; }
