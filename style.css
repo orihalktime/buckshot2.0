@@ -120,7 +120,6 @@ h1 {
     0% { transform: scale(1); } 15% { transform: scale(1.3); } 30% { transform: scale(1); } 45% { transform: scale(1.15); } 60% { transform: scale(1); }
 }
 
-/* НОВОЕ: Критическое сердце (электрическое/сломанное) */
 .heart-critical {
     color: #ff0000;
     text-shadow: 0 0 10px #ff9900;
@@ -169,14 +168,7 @@ h1 {
     position: relative;
 }
 .btn-item:active { transform: scale(0.95); }
-
-/* ИЗМЕНЕНО: Неактивные предметы ярче */
-.btn-item:disabled { 
-    opacity: 0.8; /* Было 0.6 */
-    pointer-events: none; 
-    color: #446644; /* Чуть темнее текст, но кнопка видна */
-    border-color: #222;
-}
+.btn-item:disabled { opacity: 0.8; pointer-events: none; color: #446644; border-color: #222; }
 .btn-item span { pointer-events: none; }
 
 .p-item { border-color: #2f4f2f; }
@@ -199,7 +191,12 @@ h1 {
 .l-sys { color: #666; }
 .l-money { color: var(--warn); border-left-color: var(--warn); }
 
-.actions { display: flex; gap: 10px; height: 60px; margin-top: auto;}
+/* --- ИСПРАВЛЕННЫЙ ФУТЕР ДЛЯ ТЕЛЕФОНА --- */
+.actions-container {
+    margin-top: auto; /* Прижимает этот блок к низу */
+    padding-top: 10px; /* Отступ сверху */
+}
+.actions { display: flex; gap: 10px; height: 60px; }
 .btn-main {
     flex: 1; background: #0f1f0f; color: var(--bright-green); border: 2px solid var(--main-green);
     font-weight: bold; font-size: 1.1em; text-transform: uppercase; font-family: inherit;
