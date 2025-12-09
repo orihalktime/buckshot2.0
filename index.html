@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BUCKSHOT: FINAL CUT</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#050505"/>
+</head>
+<body>
+
+    
+
+    <audio id="mus-lobby" src="mus_lobby.mp3" loop crossorigin="anonymous"></audio>
+    <audio id="mus-norm1" src="mus_norm1.mp3" loop crossorigin="anonymous"></audio>
+    <audio id="mus-norm2" src="mus_norm2.mp3" loop crossorigin="anonymous"></audio>
+    <audio id="mus-fin1" src="mus_fin1.mp3" loop crossorigin="anonymous"></audio>
+    <audio id="mus-fin2" src="mus_fin2.mp3" loop crossorigin="anonymous"></audio>
+    <audio id="mus-win" src="mus_win.mp3" loop crossorigin="anonymous"></audio>
+    <audio id="mus-death" src="mus_death.mp3" loop crossorigin="anonymous"></audio>
+
+
+
+    <audio id="snd-shot" src="snd_shot.mp3" crossorigin="anonymous"></audio>
+    <audio id="snd-pump" src="snd_pump.mp3" crossorigin="anonymous"></audio>
+    <audio id="snd-click" src="snd_click.mp3" crossorigin="anonymous"></audio>
+    <audio id="snd-beer" src="snd_beer.mp3" crossorigin="anonymous"></audio>
+    <audio id="snd-cig" src="snd_cig.mp3" crossorigin="anonymous"></audio>
+    <audio id="snd-cuff" src="snd_cuff.mp3" crossorigin="anonymous"></audio>
+    <audio id="snd-saw" src="snd_saw.mp3" crossorigin="anonymous"></audio>
+    <audio id="snd-dev" src="snd_dev.mp3" crossorigin="anonymous"></audio>
+    <audio id="snd-heal" src="snd_heal.mp3" crossorigin="anonymous"></audio>
+    <audio id="snd-heart" src="snd_heart.mp3" loop crossorigin="anonymous"></audio>
+    <audio id="snd-mag" src="snd_mag.mp3" crossorigin="anonymous"></audio>
+
+    <div class="scanlines"></div>
+    <div id="vignette" class="vignette"></div>
+    <!-- НОВЫЙ ЭЛЕМЕНТ ДЛЯ ВСПЫШКИ -->
+    <div id="damage-flash" class="damage-flash"></div>
+
+    <!-- ЭКРАН ВВОДА ИМЕНИ -->
+    <div id="screen-name" class="fullscreen">
+        <div class="fs-title">BUCKSHOT<br>ROULETTE</div>
+        <div class="fs-subtitle">FINAL CUT EDITION</div>
+        <input type="text" id="inp-name" placeholder="ВВЕДИТЕ ИМЯ" maxlength="12">
+        <button id="btn-next" class="mode-btn" style="padding: 15px; max-width: 200px;">ДАЛЕЕ</button>
+    </div>
+
+    <!-- ЭКРАН ВЫБОРА РЕЖИМА -->
+    <div id="screen-mode" class="fullscreen" style="display: none;">
+        <div class="fs-title">РЕЖИМ ИГРЫ</div>
+        <button id="btn-standard" class="mode-btn">СТАНДАРТ (3 ПОБЕДЫ)</button>
+        <button id="btn-endless" class="mode-btn">БЕСКОНЕЧНЫЙ</button>
+    </div>
+    
+    <!-- ЭКРАН УДВОЕНИЯ -->
+    <div id="screen-cashout" class="fullscreen" style="display: none;">
+        <div class="fs-title">ПОБЕДА</div>
+        <div id="cash-val" class="cash-display">$70,000</div>
+        <button id="btn-continue-endless" class="mode-btn" style="border-color:var(--warn); color:var(--warn);">УДВОИТЬ И ПРОДОЛЖИТЬ</button>
+        <button id="btn-cash-out" class="mode-btn" style="border-color:#5f5;">ЗАБРАТЬ ВЫИГРЫШ</button>
+    </div>
+
+    <!-- ЭКРАН КОНЦА ИГРЫ -->
+    <div id="screen-end" class="fullscreen" style="display: none;">
+        <div id="end-title" class="fs-title"></div>
+        <div id="end-msg" style="color:#aaa; margin-bottom:20px; text-align: center;"></div>
+        <div id="end-cash" class="cash-display" style="display:none;">$0</div>
+        <button id="btn-main-menu" class="mode-btn" style="padding: 15px; max-width: 200px;">ГЛАВНОЕ МЕНЮ</button>
+    </div>
+
+    <!-- ИГРОВОЙ ЭКРАН -->
+    <div id="game" class="game-container">
+        <h1 id="game-title">BUCKSHOT</h1>
+        <div class="info-bar">
+            <div id="p-box" class="turn-box">
+                <div class="character-header">
+                    <img src="player-icon.png" alt="Player" class="character-icon">
+                    <div id="p-name">ИГРОК</div>
+                </div>
+                <div id="p-hp" class="hp-visual"></div>
+                <div id="p-hp-num" class="hp-num"></div>
+            </div>
+            <div class="ammo-center">
+                <div style="font-size:0.7em; color:#666;">ЗАРЯД</div>
+                <div class="ammo-count">
+                    <span id="ammo-l" class="live-bullet">0</span> 
+                    <span style="color:#333">|</span> 
+                    <span id="ammo-b" class="blank-bullet">0</span>
+                </div>
+            </div>
+            <div id="d-box" class="turn-box">
+                <div class="character-header">
+                    <img src="dealer-icon.png" alt="Dealer" class="character-icon">
+                    <div>ДИЛЕР</div>
+                </div>
+                <div id="d-hp" class="hp-visual"></div>
+                <div id="d-hp-num" class="hp-num"></div>
+            </div>
+        </div>
+        <div class="items-area">
+            <div id="p-inv" class="inv-box">
+                <h3>ВАШИ ПРЕДМЕТЫ</h3>
+                <div id="p-grid" class="grid"></div>
+            </div>
+            <div id="d-inv" class="inv-box">
+                <h3>ПРЕДМЕТЫ ДИЛЕРА</h3>
+                <div id="d-grid" class="grid"></div>
+            </div>
+        </div>
+        <div id="log" class="log-container"></div>
+        <div class="actions">
+            <button id="btn-d" class="btn-main" disabled>В ДИЛЕРА</button>
+            <button id="btn-s" class="btn-main" disabled>В СЕБЯ</button>
+        </div>
+        <div id="ai-status"></div>
+    </div>
+    <script src="game.js"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js');
+        });
+      }
+    </script>
+</body>
+</html>
