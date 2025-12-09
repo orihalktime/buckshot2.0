@@ -46,7 +46,8 @@ document.addEventListener('DOMContentLoaded', () => {
             heart: el('snd-heart'), mag: el('snd-mag')
         },
         vignette: el('vignette'), gameContainer: el('game'),
-        damageFlash: el('damage-flash')
+        damageFlash: el('damage-flash'),
+        dealerName: el('d-box').querySelector('.character-header div')
     };
     
     // --- АУДИО ---
@@ -67,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const log = (text, className = "") => { ui.log.innerHTML += `<div class="log-line ${className}">> ${text}</div>`; ui.log.scrollTop = ui.log.scrollHeight; };
     const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
     function addMoney(amount, reason) { state.money += amount; }
-    function resetWatchdog() { if (dealerWatchdogTimer) clearTimeout(dealerWatchdogTimer); if (state.turn === 'd' && !state.isGameOver) { dealerWatchdogTimer = setTimeout(() => { log("Дилер замешкался... (АВТО-ХОД)", "l-sys"); ui.aiStatus.innerText = ""; const target = aiMemory.knownCharge === 'blank' ? 'self' : 'p'; shoot(target); }, 8000); } }
+    function resetWatchdog() { if (dealerWatchdogTimer) clearTimeout(dealerWatchdogTimer); if (state.turn === 'd' && !state.cuffedTurns.d && !state.isGameOver) { dealerWatchdogTimer = setTimeout(() => { log("Дилер замешкался... (АВТО-ХОД)", "l-sys"); ui.dealerName.innerText = "ДИЛЕР"; ui.boxes.d.classList.remove("thinking"); const target = aiMemory.knownCharge === 'blank' ? 'self' : 'p'; shoot(target); }, 8000); } }
     function triggerDamageFlash() { ui.damageFlash.classList.add('active'); setTimeout(() => { ui.damageFlash.classList.remove('active'); }, 150); }
     function getNormalRoundMusic() { const r = Math.random(); if (r < 0.45) return ui.audio.norm1; if (r < 0.90) return ui.audio.norm2; return ui.audio.fin2; }
     function getFinalRoundMusic() { return Math.random() > 0.5 ? ui.audio.fin1 : ui.audio.fin2; }
@@ -84,7 +85,6 @@ document.addEventListener('DOMContentLoaded', () => {
         state.isBlocked = false; state.isSuddenDeath = false; state.wiresCut = false;
         ui.screens.game.classList.remove("sudden-death");
         let currentMaxHp = 0; let giveItems = true;
-        
         if (state.mode === GAME_MODES.STANDARD) {
             ui.gameTitle.innerText = `BUCKSHOT - ЭТАП ${state.stage}`;
             switch(state.stage) {
@@ -166,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ui.boxes.p.className = "p"===state.turn?"turn-box active-turn":"turn-box"; 
         ui.boxes.d.className = "d"===state.turn?"turn-box active-turn":"turn-box"; 
         
-        if (state.wiresCut && state.hp.d <= 2) { ui.boxes.d.classList.add('critical-state'); } else { ui.boxes.d.classList.remove('critical-state'); }
+        if (state.isSuddenDeath && state.hp.d <= 2) { ui.boxes.d.classList.add('critical-state'); } else { ui.boxes.d.classList.remove('critical-state'); }
 
         const canAct = !state.isBlocked && "p"===state.turn && state.charges.length > 0 && !state.cuffedTurns.p && !state.isStealing && !state.isGameOver;
         ui.buttons.dealer.disabled = !canAct; ui.buttons.self.disabled = !canAct;
@@ -258,10 +258,16 @@ document.addEventListener('DOMContentLoaded', () => {
         resetWatchdog();
         
         await wait(2500);
+        
         if(state.cuffedTurns.d > 0) { 
             log("Дилер пропускает ход (в наручниках).", "l-sys"); 
-            state.cuffedTurns.d = 0; state.turn = 'p'; handleNextTurn(); return; 
+            state.cuffedTurns.d = 0; state.turn = 'p'; 
+            // Отключаем таймер, так как ход переходит к игроку
+            if (dealerWatchdogTimer) clearTimeout(dealerWatchdogTimer);
+            handleNextTurn(); 
+            return; 
         }
+        
         if (aiMemory.knownIndex === 0) { aiMemory.knownCharge = aiMemory.knownType; aiMemory.knownIndex = -1; }
         
         let itemUsedInLoop = true;
@@ -403,32 +409,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function gameOver(isWin) {
         ui.sfx.heart.pause(); 
-        
         if (!isWin && state.mode === GAME_MODES.ENDLESS) {
-             // Просто продолжаем до экрана поражения
+            playMusic(ui.audio.lobby); log("Смерть... Цикл перезапускается.", "l-harm");
+            state.money = state.endlessCycleStartMoney; state.stage = state.endlessCycleStartStage;
+            await wait(3000); initializeStage(); return;
         }
-        
         playMusic(isWin ? ui.audio.win : ui.audio.death);
-        
         state.isGameOver = true; state.isBlocked = true;
         ui.screens.game.style.display = 'none'; ui.screens.cash.style.display = 'none'; ui.screens.end.style.display = 'flex';
-        
         const title = isWin ? "ПОБЕДА!" : "ПОРАЖЕНИЕ";
         const msg = isWin ? (state.mode === GAME_MODES.STANDARD ? "Вы забрали главный приз:" : "Вы ушли с суммой:") : `Вы погибли в ${state.mode === GAME_MODES.STANDARD ? 'этапе' : 'раунде'} ${state.stage}.`;
-        
         ui.end.title.innerText = title; ui.end.title.style.color = isWin ? '#5f5' : '#f55';
         ui.end.msg.innerHTML = msg;
-        
-        if(isWin || state.mode === GAME_MODES.ENDLESS) { 
-            ui.end.cash.style.display = 'block'; 
-            const finalMoney = (isWin && state.mode === GAME_MODES.STANDARD) ? (70000 + state.money) : state.money; 
-            animateCounter(ui.end.cash, 0, finalMoney, 1500); 
-        } else { 
-            ui.end.cash.style.display = 'none'; 
-        }
+        if(isWin || state.mode === GAME_MODES.ENDLESS) { ui.end.cash.style.display = 'block'; const finalMoney = (isWin && state.mode === GAME_MODES.STANDARD) ? (70000 + state.money) : state.money; animateCounter(ui.end.cash, 0, finalMoney, 1500); } else { ui.end.cash.style.display = 'none'; }
     }
 
-    // --- НАЗНАЧЕНИЕ СОБЫТИЙ ---
     ui.buttons.next.onclick = toMode;
     ui.buttons.standard.onclick = startStandard;
     ui.buttons.endless.onclick = startEndless;
